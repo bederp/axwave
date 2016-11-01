@@ -30,6 +30,7 @@ public class Server {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
                 ChannelPipeline pipeline = ch.pipeline();
+                //Decodes frames based on Length field
                 pipeline.addLast(new LengthFieldBasedFrameDecoder(MAX_FRAME_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH));
                 pipeline.addLast(new SoundRecordMessageDecoder());
                 pipeline.addLast(new SoundRecordMessageResponseEncoder());

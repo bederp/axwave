@@ -13,6 +13,6 @@ public class SoundRecordMessageEncoder extends MessageToByteEncoder<SoundRecordM
 
     @Override
     protected void encode(ChannelHandlerContext ctx, SoundRecordMessage msg, ByteBuf out) throws Exception {
-        out.writeBytes(msg.toByteStream().toByteArray());
+        out.writeBytes(msg.toByteArray());
     }
 }

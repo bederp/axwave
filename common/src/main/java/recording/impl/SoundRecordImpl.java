@@ -3,20 +3,15 @@ package recording.impl;
 import recording.SoundRecord;
 import soundformats.AudioFormatEnum;
 
-import java.io.ByteArrayOutputStream;
-
-/**
- * Created by kinder112 on 30.10.2016.
- */
 public class SoundRecordImpl implements SoundRecord {
 
     private AudioFormatEnum format;
-    private ByteArrayOutputStream samples;
+    private byte[] samples;
     private long timestamp;
 
-    public SoundRecordImpl(AudioFormatEnum format, ByteArrayOutputStream data, long timestamp) {
+    public SoundRecordImpl(AudioFormatEnum format, byte[] samples, long timestamp) {
         this.format = format;
-        this.samples = data;
+        this.samples = samples;
         this.timestamp = timestamp;
     }
 
@@ -31,7 +26,7 @@ public class SoundRecordImpl implements SoundRecord {
     }
 
     @Override
-    public ByteArrayOutputStream getSamples() {
+    public byte[] getSamples() {
         return samples;
     }
 }

@@ -1,6 +1,8 @@
 package messages;
 
 import recording.SoundRecord;
+import recording.impl.SoundRecordImpl;
+import soundformats.AudioFormatEnum;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -18,52 +20,73 @@ public class SoundRecordMessage {
 
     private static final int TIMESTAMP_SIZE = 8;
     private static final int SOUND_FORMAT_SIZE = 2;
-    public static final int MAX_SAMPLES_LENGTH = Short.MAX_VALUE - TIMESTAMP_SIZE - SOUND_FORMAT_SIZE;
+    private static final short MAGIC = 0x1234;
 
     private SoundRecord record;
     private short magic;
     private Short packetSize;
 
-    public SoundRecordMessage(SoundRecord record, short magic) {
+    /**
+     * Constructor that check if {@link SoundRecord} or more precise it's underlying samples
+     * will fit the {@link #packetSize}
+     * @param record see {@link SoundRecord}
+     * @throws MessageSizeExceeded when given sound record is too big for message length field {@link #packetSize}
+     */
+    public SoundRecordMessage(SoundRecord record) throws MessageSizeExceeded {
         this.record = record;
-        this.magic = magic;
+        this.magic = MAGIC;
         calculatePacketSize();
     }
 
-    public SoundRecordMessage(SoundRecord record, short magic, short packetSize) {
-        this(record, magic);
+    private SoundRecordMessage(SoundRecord record, short magic, short packetSize) {
+        this.record = record;
+        this.magic = magic;
         this.packetSize = packetSize;
     }
 
-    public ByteArrayOutputStream toByteStream() {
-        final ByteArrayOutputStream formattedSample = new ByteArrayOutputStream();
-
+    public byte[] toByteArray() {
         final byte[] magic = shortToBytes(this.magic);
-        final byte[] packetSize = shortToBytes(calculatePacketSize());
+        final byte[] packetSize = shortToBytes(this.packetSize);
         final byte[] timestamp = longToBytes(record.getTimestamp());
         final byte[] soundFormat = shortToBytes(record.getAudioFormat().getFormatEncoding());
-        final byte[] samples = record.getSamples().toByteArray();
+        final byte[] samples = record.getSamples();
 
-        formattedSample.write(magic, 0, magic.length);
-        formattedSample.write(packetSize, 0, packetSize.length);
-        formattedSample.write(timestamp, 0, timestamp.length);
-        formattedSample.write(soundFormat, 0, soundFormat.length);
-        formattedSample.write(samples, 0, samples.length);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bos.write(magic, 0, magic.length);
+        bos.write(packetSize, 0, packetSize.length);
+        bos.write(timestamp, 0, timestamp.length);
+        bos.write(soundFormat, 0, soundFormat.length);
+        bos.write(samples, 0, samples.length);
 
-        return formattedSample;
+        return bos.toByteArray();
     }
 
-    private short calculatePacketSize() throws ArithmeticException {
+    public static SoundRecordMessage fromByteArray(byte[] bytes) {
+        final ByteBuffer buffer = ByteBuffer.wrap(bytes);
+
+        final short magic = buffer.getShort();
+        final short packetSize = buffer.getShort();
+        final long timestamp = buffer.getLong();
+        final short formatEncoding = buffer.getShort();
+        final int samplesSize = buffer.remaining();
+        byte[] samples = new byte[samplesSize];
+        buffer.get(samples);
+
+        final SoundRecord record = new SoundRecordImpl(AudioFormatEnum.findByFormatEncoding(formatEncoding), samples, timestamp);
+        return new SoundRecordMessage(record, magic, packetSize);
+    }
+
+    private short calculatePacketSize() throws MessageSizeExceeded {
         if (packetSize == null) {
             final int constSize = TIMESTAMP_SIZE + SOUND_FORMAT_SIZE;
             final int packetSize;
             try {
-                packetSize = Math.addExact(constSize, record.getSamples().size());
+                packetSize = Math.addExact(constSize, record.getSamples().length);
             } catch (ArithmeticException e) {
-                throw new ArithmeticException("Packet size has overflown int");
+                throw new MessageSizeExceeded("Sound record was to big to fit length field");
             }
-            if(packetSize > Short.MAX_VALUE){
-                throw new ArithmeticException("Packet size has overflown short");
+            if (packetSize > Short.MAX_VALUE) {
+                throw new MessageSizeExceeded("Sound record was to big to fit length field");
             }
             this.packetSize = (short) packetSize;
         }

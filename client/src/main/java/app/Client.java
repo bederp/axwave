@@ -7,6 +7,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import messages.MessageSizeExceeded;
 import messages.SoundRecordMessage;
 import netty.decoders.SoundRecordMessageResponseDecoder;
 import netty.encoders.SoundRecordMessageEncoder;
@@ -19,24 +20,23 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static soundformats.AudioFormatEnum.PCM_44100_16_STEREO_LE;
+import static soundformats.AudioFormatEnum.PCM_8000_8_MONO_LE;
 
 public class Client {
 
     private static final String SERVER_IP = "127.0.0.1";
     private static final int SERVER_PORT = 19000;
-    private static final short MAGIC = 0x1234;
 
     private static final int NUMBER_OF_EXECUTOR_THREADS = 10;
     private static final int NUMBER_OF_ARGUMENTS = 2;
-    private static final int DEFAULT_RECORDING_FREQUENCY = 2;
+    private static final int DEFAULT_RECORDING_FREQUENTNESS = 2;
     private static final int DEFAULT_RECORDING_LENGTH = 4;
 
     public static void main(String[] args) throws InterruptedException {
         int recordingFrequentness, recordingLength;
 
         if (args.length < NUMBER_OF_ARGUMENTS) {
-            recordingFrequentness = DEFAULT_RECORDING_FREQUENCY;
+            recordingFrequentness = DEFAULT_RECORDING_FREQUENTNESS;
             recordingLength = DEFAULT_RECORDING_LENGTH;
         } else {
             recordingFrequentness = Integer.parseInt(args[0]);
@@ -55,7 +55,7 @@ public class Client {
         System.out.printf("Connected to ip %s on port %s\n", SERVER_IP, SERVER_PORT);
 
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NUMBER_OF_EXECUTOR_THREADS);
-        executorService.scheduleAtFixedRate(recordSoundAndSendThroughChannel(recordingLength, channel, PCM_44100_16_STEREO_LE), 0, recordingFrequentness, SECONDS);
+        executorService.scheduleAtFixedRate(recordSoundAndSendThroughChannel(recordingLength, channel, PCM_8000_8_MONO_LE), 0, recordingFrequentness, SECONDS);
 
     }
 
@@ -82,12 +82,15 @@ public class Client {
             final SoundRecord soundRecord = new MicrophoneSoundSource().recordSound(audioFormat, recordingLength);
             SoundRecordMessage msg = null;
             try {
-                msg = new SoundRecordMessage(soundRecord, MAGIC);
+                msg = new SoundRecordMessage(soundRecord);
                 System.out.println("Sending: " + msg);
                 channel.writeAndFlush(msg);
-            } catch (ArithmeticException e) {
-                System.out.println(e.getMessage());
-                System.exit(0);
+            } catch (MessageSizeExceeded messageSizeExceeded) {
+                System.out.printf("Recording in %s for %s seconds produces " +
+                                "too big samples for sending with specified format\n" +
+                                "Please change AudioFormat or recordingLength to smaller values.",
+                        audioFormat, recordingLength);
+                System.exit(1);
             }
         };
     }

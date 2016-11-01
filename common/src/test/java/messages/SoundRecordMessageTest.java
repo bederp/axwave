@@ -5,7 +5,6 @@ import org.junit.Test;
 import recording.SoundRecord;
 import recording.impl.SoundRecordImpl;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 
 import static soundformats.AudioFormatEnum.PCM_44100_16_STEREO_LE;
@@ -24,14 +23,10 @@ public class SoundRecordMessageTest {
     @Test
     public void shouldFormatAccordingToSpec() throws Exception {
         //Given
-        short magic = 0x1234;
-        byte[] samplesBytes ={0x11, 0x12, 0x13, 0x14};
-        ByteArrayOutputStream samples = new ByteArrayOutputStream();
-        samples.write(samplesBytes);
+        byte[] samples ={0x11, 0x12, 0x13, 0x14};
         long timestamp = System.currentTimeMillis();
-
         SoundRecord record = new SoundRecordImpl(PCM_44100_16_STEREO_LE, samples, timestamp);
-        SoundRecordMessage formatter = new SoundRecordMessage(record, magic);
+        SoundRecordMessage message = new SoundRecordMessage(record);
 
         //Packet size = 8(timestamp) + 2(encoding) + 4(samples) = 14 = 0xE
         byte[] magic_and_packetSize = {0x12, 0x34, 0x00, 0x0E};
@@ -40,13 +35,12 @@ public class SoundRecordMessageTest {
         expected.put(magic_and_packetSize);
         expected.putLong(timestamp);
         expected.putShort(PCM_44100_16_STEREO_LE.getFormatEncoding());
-        expected.put(samples.toByteArray());
+        expected.put(samples);
 
         //When
-        final ByteArrayOutputStream formattedSound = formatter.toByteStream();
+        final byte[] actual = message.toByteArray();
 
         //Then
-        final byte[] actual = formattedSound.toByteArray();
         Assert.assertArrayEquals(expected.array(), actual);
     }
 }

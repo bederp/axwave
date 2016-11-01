@@ -7,9 +7,6 @@ import soundformats.AudioFormatEnum;
 import javax.sound.sampled.*;
 import java.io.ByteArrayOutputStream;
 
-/**
- * Created by kinder112 on 30.10.2016.
- */
 public class MicrophoneSoundSource implements SoundSource {
 
     private AudioFormatEnum format;
@@ -48,7 +45,7 @@ public class MicrophoneSoundSource implements SoundSource {
             e.printStackTrace();
         }
 
-        return new SoundRecordImpl(format, out, timestamp);
+        return new SoundRecordImpl(format, out.toByteArray(), timestamp);
     }
 
     /**
