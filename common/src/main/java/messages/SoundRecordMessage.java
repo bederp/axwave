@@ -1,9 +1,10 @@
-package messages.messages;
+package messages;
 
 import recording.SoundRecord;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.Date;
 
 /**
  * Formats SoundRecord according to this specification: <br>
@@ -17,15 +18,16 @@ public class SoundRecordMessage {
 
     private static final int TIMESTAMP_SIZE = 8;
     private static final int SOUND_FORMAT_SIZE = 2;
+    public static final int MAX_SAMPLES_LENGTH = Short.MAX_VALUE - TIMESTAMP_SIZE - SOUND_FORMAT_SIZE;
 
     private SoundRecord record;
     private short magic;
-    private short packetSize;
-    private long timestamp;
+    private Short packetSize;
 
     public SoundRecordMessage(SoundRecord record, short magic) {
         this.record = record;
         this.magic = magic;
+        calculatePacketSize();
     }
 
     public SoundRecordMessage(SoundRecord record, short magic, short packetSize) {
@@ -51,8 +53,21 @@ public class SoundRecordMessage {
         return formattedSample;
     }
 
-    private short calculatePacketSize() {
-        return (short) (TIMESTAMP_SIZE + SOUND_FORMAT_SIZE + record.getSamples().size());
+    private short calculatePacketSize() throws ArithmeticException {
+        if (packetSize == null) {
+            final int constSize = TIMESTAMP_SIZE + SOUND_FORMAT_SIZE;
+            final int packetSize;
+            try {
+                packetSize = Math.addExact(constSize, record.getSamples().size());
+            } catch (ArithmeticException e) {
+                throw new ArithmeticException("Packet size has overflown int");
+            }
+            if(packetSize > Short.MAX_VALUE){
+                throw new ArithmeticException("Packet size has overflown short");
+            }
+            this.packetSize = (short) packetSize;
+        }
+        return packetSize;
     }
 
     private byte[] longToBytes(long x) {
@@ -67,16 +82,16 @@ public class SoundRecordMessage {
         return buffer.array();
     }
 
-    public short getMagic() {
+    short getMagic() {
         return magic;
     }
 
-    public long getTimestamp() {
-        return timestamp;
+    long getTimestamp() {
+        return record.getTimestamp();
     }
 
     @Override
     public String toString() {
-        return String.format("Magic: 0x%04X Packet size: %d Timestamp: %d ", magic, packetSize, timestamp);
+        return String.format("SoundRecordMessage [Magic: 0x%04X Packet size: %d Timestamp: %s]", magic, packetSize, new Date(getTimestamp()));
     }
 }

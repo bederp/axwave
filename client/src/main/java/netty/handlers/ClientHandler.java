@@ -2,13 +2,13 @@ package netty.handlers;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import recording.SoundRecordMessageResponse;
+import messages.SoundRecordResponseMessage;
 
-public class ClientHandler extends SimpleChannelInboundHandler<SoundRecordMessageResponse> {
+public class ClientHandler extends SimpleChannelInboundHandler<SoundRecordResponseMessage> {
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, SoundRecordMessageResponse msg) throws Exception {
-        System.out.printf("GOT RESPONSE Timestamp %d\n", msg.getTimestamp());
+    protected void channelRead0(ChannelHandlerContext ctx, SoundRecordResponseMessage msg) throws Exception {
+        System.out.println("GOT: " + msg);
     }
 
     @Override

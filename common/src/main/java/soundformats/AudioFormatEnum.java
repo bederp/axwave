@@ -4,11 +4,9 @@ import javax.sound.sampled.AudioFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Created by kinder112 on 30.10.2016.
- */
 public enum AudioFormatEnum {
-    PCM_44100_16_STEREO_LE(44100, 16, 2, true, false, (short) 0x1218);
+    PCM_44100_16_STEREO_LE(44100, 16, 2, true, false, (short) 0x1218),
+    PCM_8000_16_STEREO_LE(44100, 16, 2, true, false, (short) 0x1413);
 
     float sampleRate;
     int sampleSizeInBits;

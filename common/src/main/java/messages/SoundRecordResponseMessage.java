@@ -1,19 +1,18 @@
-package recording;
-
-import messages.messages.SoundRecordMessage;
+package messages;
 
 import java.nio.ByteBuffer;
+import java.util.Date;
 
-public class SoundRecordMessageResponse {
+public class SoundRecordResponseMessage {
     private short magic;
     private long timestamp;
 
-    public SoundRecordMessageResponse(SoundRecordMessage message) {
+    public SoundRecordResponseMessage(SoundRecordMessage message) {
         magic = message.getMagic();
         timestamp = message.getTimestamp();
     }
 
-    public SoundRecordMessageResponse(byte[] buffer) {
+    public SoundRecordResponseMessage(byte[] buffer) {
         final ByteBuffer wrappedBuffer = ByteBuffer.wrap(buffer);
         magic = wrappedBuffer.getShort();
         timestamp = wrappedBuffer.getLong();
@@ -26,7 +25,8 @@ public class SoundRecordMessageResponse {
         return buffer.array();
     }
 
-    public long getTimestamp() {
-        return timestamp;
+    @Override
+    public String toString() {
+        return String.format("SoundRecordResponseMessage [Magic: 0x%04X Timestamp %s]", magic, new Date(timestamp));
     }
 }
