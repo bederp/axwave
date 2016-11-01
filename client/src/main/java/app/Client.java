@@ -20,15 +20,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static soundformats.AudioFormatEnum.PCM_44100_16_STEREO_LE;
 
-/**
- * Created by Paweł Beder on 29.10.2016.
- */
 public class Client {
 
     private static final int NUMBER_OF_EXECUTOR_THREADS = 10;
     private static final int NUMBER_OF_ARGUMENTS = 2;
-    public static final String SERVER_IP = "127.0.0.1";
-    public static final int SERVER_PORT = 19000;
+    private static final String SERVER_IP = "127.0.0.1";
+    private static final int SERVER_PORT = 19000;
 
     public static void main(String[] args) throws InterruptedException {
         int k, n;
@@ -62,12 +59,10 @@ public class Client {
         });
 
         final Channel channel = bootstrap.connect(SERVER_IP, SERVER_PORT).sync().channel();
-        System.out.printf("Connected to ip %s on port %s", SERVER_IP, SERVER_PORT);
-
-        AudioFormatEnum audioFormat = PCM_44100_16_STEREO_LE;
+        System.out.printf("Connected to ip %s on port %s\n", SERVER_IP, SERVER_PORT);
 
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NUMBER_OF_EXECUTOR_THREADS);
-        executorService.scheduleAtFixedRate(recordSoundAndSendThroughChannel(n, channel, audioFormat), 0, k, SECONDS);
+        executorService.scheduleAtFixedRate(recordSoundAndSendThroughChannel(n, channel, PCM_44100_16_STEREO_LE), 0, k, SECONDS);
 
     }
 

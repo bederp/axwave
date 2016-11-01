@@ -1,14 +1,15 @@
 package netty.decoders;
 
-import formaters.SoundRecordMessage;
+import messages.messages.SoundRecordMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.ByteToMessageDecoder;
 import recording.SoundRecord;
 import recording.impl.SoundRecordImpl;
 import soundformats.AudioFormatEnum;
 
 import java.io.ByteArrayOutputStream;
+import java.util.List;
 
 
 /**
@@ -19,36 +20,21 @@ import java.io.ByteArrayOutputStream;
  * Sound format (2 bytes) (AudioFormatEnum ) <br>
  * Sound samples <br>
  */
-
-/**
- * Created by kinder112 on 30.10.2016.
- */
-public class SoundRecordMessageDecoder extends LengthFieldBasedFrameDecoder {
-
-    public static final int BYTES_TO_PACKET_SIZE = 4;
-
-    public SoundRecordMessageDecoder(int maxFrameLength, int lengthFieldOffset, int lengthFieldLength) {
-        super(maxFrameLength, lengthFieldOffset, lengthFieldLength);
-    }
+public class SoundRecordMessageDecoder extends ByteToMessageDecoder {
 
     @Override
-    protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
-        ByteBuf decoded = (ByteBuf) super.decode(ctx, in);
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
 
-        if (decoded == null) {
-            return null;
-        }
-
-        final short magic = decoded.readShort();
-        final short packetSize = decoded.readShort();
-        final long timestamp = decoded.readLong();
-        final short formatEncoding = decoded.readShort();
+        final short magic = in.readShort();
+        final short packetSize = in.readShort();
+        final long timestamp = in.readLong();
+        final short formatEncoding = in.readShort();
         ByteArrayOutputStream samples = new ByteArrayOutputStream();
-        samples.write(decoded.array());
+        in.readBytes(samples, in.readableBytes());
 
         final SoundRecord record = new SoundRecordImpl(AudioFormatEnum.findByFormatEncoding(formatEncoding), samples, timestamp);
+        final SoundRecordMessage message = new SoundRecordMessage(record, magic, packetSize);
+        out.add(message);
 
-        return new SoundRecordMessage(record, magic);
     }
-
 }

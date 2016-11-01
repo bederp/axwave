@@ -1,12 +1,9 @@
 package recording;
 
-import formaters.SoundRecordMessage;
+import messages.messages.SoundRecordMessage;
 
 import java.nio.ByteBuffer;
 
-/**
- * Created by kinder112 on 30.10.2016.
- */
 public class SoundRecordMessageResponse {
     private short magic;
     private long timestamp;

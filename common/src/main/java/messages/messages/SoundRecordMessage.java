@@ -1,4 +1,4 @@
-package formaters;
+package messages.messages;
 
 import recording.SoundRecord;
 
@@ -15,16 +15,22 @@ import java.nio.ByteBuffer;
  */
 public class SoundRecordMessage {
 
-    public static final int TIMESTAMP_SIZE = 8;
-    public static final int SOUND_FORMAT_SIZE = 2;
+    private static final int TIMESTAMP_SIZE = 8;
+    private static final int SOUND_FORMAT_SIZE = 2;
 
     private SoundRecord record;
     private short magic;
+    private short packetSize;
     private long timestamp;
 
     public SoundRecordMessage(SoundRecord record, short magic) {
         this.record = record;
         this.magic = magic;
+    }
+
+    public SoundRecordMessage(SoundRecord record, short magic, short packetSize) {
+        this(record, magic);
+        this.packetSize = packetSize;
     }
 
     public ByteArrayOutputStream toByteStream() {
@@ -67,5 +73,10 @@ public class SoundRecordMessage {
 
     public long getTimestamp() {
         return timestamp;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Magic: 0x%04X Packet size: %d Timestamp: %d ", magic, packetSize, timestamp);
     }
 }

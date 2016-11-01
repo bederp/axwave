@@ -1,18 +1,15 @@
 package netty.handlers;
 
-import formaters.SoundRecordMessage;
+import messages.messages.SoundRecordMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import recording.SoundRecordMessageResponse;
 
-/**
- * Created by kinder112 on 30.10.2016.
- */
 public class ServerHandler extends SimpleChannelInboundHandler<SoundRecordMessage> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, SoundRecordMessage msg) throws Exception {
-        System.out.println("GOT SOUND RECORD!");
+        System.out.println(msg);
         System.out.println("Sending back magic + timestamp");
         ctx.writeAndFlush(new SoundRecordMessageResponse(msg));
     }
