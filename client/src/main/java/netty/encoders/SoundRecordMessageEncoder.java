@@ -7,7 +7,7 @@ import messages.SoundRecordMessage;
 
 
 /**
- * Encodes SoundRecord to ByteArray adding MAGIC in progress
+ * Encodes {@link recording.SoundRecord}
  */
 public class SoundRecordMessageEncoder extends MessageToByteEncoder<SoundRecordMessage> {
 

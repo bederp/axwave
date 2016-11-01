@@ -7,6 +7,9 @@ import soundformats.AudioFormatEnum;
 import javax.sound.sampled.*;
 import java.io.ByteArrayOutputStream;
 
+/**
+ * {@link SoundSource} implementation which tries to record sound from microphone
+ */
 public class MicrophoneSoundSource implements SoundSource {
 
     private AudioFormatEnum format;
@@ -28,12 +31,13 @@ public class MicrophoneSoundSource implements SoundSource {
             byte[] data = new byte[line.getBufferSize() / 5];
             int numBytesRead;
 
-            // Save timestamp
-            timestamp = System.currentTimeMillis();
-
             // Begin audio capture.
+            line.flush();
             line.open(af);
             line.start();
+
+            // Save timestamp
+            timestamp = System.currentTimeMillis();
 
             while (out.size() < recordingSize) {
                 // Read the next chunk of data from the TargetDataLine.

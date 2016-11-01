@@ -3,6 +3,10 @@ package messages;
 import java.nio.ByteBuffer;
 import java.util.Date;
 
+/**
+ * Message object which Server pings back to Client <br>
+ * after receiving {@link SoundRecordMessage}
+ */
 public class SoundRecordResponseMessage {
     private short magic;
     private long timestamp;

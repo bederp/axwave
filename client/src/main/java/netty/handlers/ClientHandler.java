@@ -4,6 +4,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import messages.SoundRecordResponseMessage;
 
+
+/**
+ * Handles Incoming {@link SoundRecordResponseMessage}
+ * In this case we just print magic and timestamp to console
+ */
 public class ClientHandler extends SimpleChannelInboundHandler<SoundRecordResponseMessage> {
 
     @Override
@@ -13,7 +18,6 @@ public class ClientHandler extends SimpleChannelInboundHandler<SoundRecordRespon
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        // Close the connection when an exception is raised.
         cause.printStackTrace();
         ctx.close();
     }

@@ -16,6 +16,10 @@ public class SoundRecordMessageDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        if(in.readableBytes() == 0){
+            return;
+        }
+
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         in.readBytes(bos, in.readableBytes());
         SoundRecordMessage message = SoundRecordMessage.fromByteArray(bos.toByteArray());

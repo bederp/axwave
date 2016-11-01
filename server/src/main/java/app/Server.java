@@ -22,6 +22,13 @@ public class Server {
     public static void main(String[] args) throws InterruptedException {
         NioEventLoopGroup boosGroup = new NioEventLoopGroup();
         NioEventLoopGroup workerGroup = new NioEventLoopGroup();
+        ServerBootstrap bootstrap = getServerBootstrap(boosGroup, workerGroup);
+
+        bootstrap.bind(LISTEN_PORT).sync();
+        System.out.printf("Server started on port %s\n", LISTEN_PORT);
+    }
+
+    private static ServerBootstrap getServerBootstrap(NioEventLoopGroup boosGroup, NioEventLoopGroup workerGroup) {
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(boosGroup, workerGroup);
         bootstrap.channel(NioServerSocketChannel.class);
@@ -37,8 +44,6 @@ public class Server {
                 pipeline.addLast(new ServerHandler());
             }
         });
-
-        bootstrap.bind(LISTEN_PORT).sync();
-        System.out.printf("Server started on port %s\n", LISTEN_PORT);
+        return bootstrap;
     }
 }

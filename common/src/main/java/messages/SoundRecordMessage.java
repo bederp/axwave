@@ -9,7 +9,9 @@ import java.nio.ByteBuffer;
 import java.util.Date;
 
 /**
- * Formats SoundRecord according to this specification: <br>
+ * Message object which wraps {@link SoundRecord} <br>
+ * Client sends it to Server <br>
+ * Has following format: <br>
  * Magic number (2 bytes) 0x12 0x34 <br>
  * Packet size (2 bytes) (sizeof(timestamp) + sizeof(sound format) + samples.length) <br>
  * Timestamp of first sample in payload (8 bytes) <br>
@@ -29,6 +31,7 @@ public class SoundRecordMessage {
     /**
      * Constructor that check if {@link SoundRecord} or more precise it's underlying samples
      * will fit the {@link #packetSize}
+     *
      * @param record see {@link SoundRecord}
      * @throws MessageSizeExceeded when given sound record is too big for message length field {@link #packetSize}
      */
@@ -38,6 +41,13 @@ public class SoundRecordMessage {
         calculatePacketSize();
     }
 
+    /**
+     * Private constructor which should be used only when deserializing from byte[]
+     *
+     * @param record     see {@link SoundRecord}
+     * @param magic      2 first bytes when deserializing from byte[]
+     * @param packetSize describes remaining length of data in byte[]
+     */
     private SoundRecordMessage(SoundRecord record, short magic, short packetSize) {
         this.record = record;
         this.magic = magic;
@@ -76,6 +86,12 @@ public class SoundRecordMessage {
         return new SoundRecordMessage(record, magic, packetSize);
     }
 
+    /**
+     * Check whether {@link SoundRecord} will fit into the message {@link #packetSize} field
+     *
+     * @return packetSize according to specified format
+     * @throws MessageSizeExceeded when {@link SoundRecord} is to big for this {@link SoundRecordMessage}
+     */
     private short calculatePacketSize() throws MessageSizeExceeded {
         if (packetSize == null) {
             final int constSize = TIMESTAMP_SIZE + SOUND_FORMAT_SIZE;
@@ -93,6 +109,23 @@ public class SoundRecordMessage {
         return packetSize;
     }
 
+    short getMagic() {
+        return magic;
+    }
+
+    long getTimestamp() {
+        return record.getTimestamp();
+    }
+
+    public SoundRecord getRecord() {
+        return record;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("SoundRecordMessage [Magic: 0x%04X Packet size: %d Timestamp: %s]", magic, packetSize, new Date(getTimestamp()));
+    }
+
     private byte[] longToBytes(long x) {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putLong(x);
@@ -103,18 +136,5 @@ public class SoundRecordMessage {
         ByteBuffer buffer = ByteBuffer.allocate(Short.BYTES);
         buffer.putShort(x);
         return buffer.array();
-    }
-
-    short getMagic() {
-        return magic;
-    }
-
-    long getTimestamp() {
-        return record.getTimestamp();
-    }
-
-    @Override
-    public String toString() {
-        return String.format("SoundRecordMessage [Magic: 0x%04X Packet size: %d Timestamp: %s]", magic, packetSize, new Date(getTimestamp()));
     }
 }

@@ -3,6 +3,9 @@ package recording.impl;
 import recording.SoundRecord;
 import soundformats.AudioFormatEnum;
 
+/**
+ * Simple POJO implementing {@link SoundRecord}
+ */
 public class SoundRecordImpl implements SoundRecord {
 
     private AudioFormatEnum format;

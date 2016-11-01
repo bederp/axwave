@@ -15,6 +15,8 @@ import netty.handlers.ClientHandler;
 import recording.SoundRecord;
 import recording.impl.MicrophoneSoundSource;
 import soundformats.AudioFormatEnum;
+import writers.DataWriter;
+import writers.SoundRecordMessageChannelWriter;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -54,8 +56,11 @@ public class Client {
         final Channel channel = bootstrap.connect(SERVER_IP, SERVER_PORT).sync().channel();
         System.out.printf("Connected to ip %s on port %s\n", SERVER_IP, SERVER_PORT);
 
+        DataWriter<SoundRecordMessage> writer = new SoundRecordMessageChannelWriter(channel);
+        final Runnable runnable = recordSoundAndSendData(recordingLength, writer, PCM_8000_8_MONO_LE);
+
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NUMBER_OF_EXECUTOR_THREADS);
-        executorService.scheduleAtFixedRate(recordSoundAndSendThroughChannel(recordingLength, channel, PCM_8000_8_MONO_LE), 0, recordingFrequentness, SECONDS);
+        executorService.scheduleAtFixedRate(runnable, 0, recordingFrequentness, SECONDS);
 
     }
 
@@ -77,14 +82,14 @@ public class Client {
         return bootstrap;
     }
 
-    private static Runnable recordSoundAndSendThroughChannel(int recordingLength, Channel channel, AudioFormatEnum audioFormat) {
+    private static Runnable recordSoundAndSendData(int recordingLength, DataWriter<SoundRecordMessage> writer, AudioFormatEnum audioFormat) {
         return () -> {
             final SoundRecord soundRecord = new MicrophoneSoundSource().recordSound(audioFormat, recordingLength);
             SoundRecordMessage msg = null;
             try {
                 msg = new SoundRecordMessage(soundRecord);
                 System.out.println("Sending: " + msg);
-                channel.writeAndFlush(msg);
+                writer.write(msg);
             } catch (MessageSizeExceeded messageSizeExceeded) {
                 System.out.printf("Recording in %s for %s seconds produces " +
                                 "too big samples for sending with specified format\n" +
