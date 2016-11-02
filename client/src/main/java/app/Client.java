@@ -1,5 +1,6 @@
 package app;
 
+import concurrent.LongRunningTaskWrapper;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -26,8 +27,8 @@ public class Client {
 
     private static final int NUMBER_OF_EXECUTOR_THREADS = 10;
     private static final int NUMBER_OF_ARGUMENTS = 2;
-    private static final int DEFAULT_RECORDING_FREQUENTNESS = 1;
-    private static final int DEFAULT_RECORDING_LENGTH = 3;
+    private static final int DEFAULT_RECORDING_FREQUENTNESS = 2;
+    private static final int DEFAULT_RECORDING_LENGTH = 4;
 
     public static void main(String[] args) throws InterruptedException {
         int recordingFrequentness, recordingLength;
@@ -50,9 +51,10 @@ public class Client {
 
         DataWriter<SoundRecordMessage> writer = new SoundRecordMessageChannelWriter(channel);
         final Runnable runnable = recordSoundAndSendData(recordingLength, writer, PCM_8000_8_MONO_LE);
+        LongRunningTaskWrapper<Runnable> wrappedTask = new LongRunningTaskWrapper<>(runnable);
 
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NUMBER_OF_EXECUTOR_THREADS);
-        executorService.scheduleAtFixedRate(runnable, 0, recordingFrequentness, SECONDS);
+        executorService.scheduleAtFixedRate(wrappedTask, 0, recordingFrequentness, SECONDS);
 
     }
 
@@ -81,7 +83,7 @@ public class Client {
                 writer.write(msg);
             } catch (MessageSizeExceeded messageSizeExceeded) {
                 System.out.printf("Recording in %s for %s seconds produces " +
-                                "too big samples for sending with specified format\n" +
+                                "too many samples for sending with specified format\n" +
                                 "Please change AudioFormat or recordingLength to smaller values.",
                         audioFormat, recordingLength);
                 System.exit(1);

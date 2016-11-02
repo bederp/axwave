@@ -1,7 +1,6 @@
 package recording.impl;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import recording.SoundRecord;
 import soundformats.AudioFormatEnum;
@@ -34,9 +33,6 @@ public class MicrophoneSoundSourceTest {
         Assert.assertEquals(expectedBufferSize, record.getSamples().length);
     }
 
-    //Don't know why TargetDataLine is blocked when second callable wants access
-    //Check next test as this is not the case when using Runnable and saving to file
-    @Ignore
     @Test
     public void twoCallableStartedAtSameTimeShouldRecordSameSamples() throws Exception {
         //Given
@@ -63,15 +59,18 @@ public class MicrophoneSoundSourceTest {
         final Path file2 = Paths.get(System.getProperty("user.dir"), "tmp2.pcm");
 
         //When
-        startRecordingThreadSavingToFile(secondsToRecord, audioFormatEnum, file1);
-        startRecordingThreadSavingToFile(secondsToRecord, audioFormatEnum, file2);
+        final Thread t1 = startRecordingThreadSavingToFile(secondsToRecord, audioFormatEnum, file1);
+        final Thread t2 = startRecordingThreadSavingToFile(secondsToRecord, audioFormatEnum, file2);
+
+        t1.join();
+        t2.join();
         //Then
         final byte[] bytes1 = Files.readAllBytes(file1);
-        final byte[] bytes2 = Files.readAllBytes(file1);
+        final byte[] bytes2 = Files.readAllBytes(file2);
         Assert.assertArrayEquals(bytes1, bytes2);
     }
 
-    private void startRecordingThreadSavingToFile(int secondsToRecord, AudioFormatEnum audioFormatEnum, Path path) {
+    private Thread startRecordingThreadSavingToFile(int secondsToRecord, AudioFormatEnum audioFormatEnum, Path path) {
         final Thread thread = new Thread(() -> {
             final SoundRecord record = new MicrophoneSoundSource().recordSound(audioFormatEnum, secondsToRecord);
             try {
@@ -80,11 +79,7 @@ public class MicrophoneSoundSourceTest {
                 e.printStackTrace();
             }
         });
-        try {
-            thread.start();
-            thread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        thread.start();
+        return thread;
     }
 }

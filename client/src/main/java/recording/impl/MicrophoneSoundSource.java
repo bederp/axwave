@@ -28,7 +28,7 @@ public class MicrophoneSoundSource implements SoundSource {
             readSound(line);
 
         } catch (LineUnavailableException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
 
         return new SoundRecordImpl(format, out.toByteArray(), timestamp);
