@@ -14,7 +14,7 @@ public class MicrophoneSoundSource implements SoundSource {
 
     private AudioFormatEnum format;
     private int seconds;
-    private ByteArrayOutputStream out;
+    private ByteArrayOutputStream out = new ByteArrayOutputStream();
     private long timestamp;
 
     @Override
@@ -22,34 +22,35 @@ public class MicrophoneSoundSource implements SoundSource {
         this.format = format;
         this.seconds = seconds;
 
-        AudioFormat af = format.getAudioFormat();
-        out = new ByteArrayOutputStream();
-
-        try (TargetDataLine line = AudioSystem.getTargetDataLine(af)) {
-            int recordingSize = calculateRequiredSize();
-
-            byte[] data = new byte[line.getBufferSize() / 5];
-            int numBytesRead;
-
-            // Begin audio capture.
-            line.flush();
-            line.open(af);
-            line.start();
-
-            // Save timestamp
+        try (TargetDataLine line = AudioSystem.getTargetDataLine(format.getAudioFormat())) {
+            startLineRecording(line);
             timestamp = System.currentTimeMillis();
+            readSound(line);
 
-            while (out.size() < recordingSize) {
-                // Read the next chunk of data from the TargetDataLine.
-                numBytesRead = line.read(data, 0, data.length);
-                // Save this chunk of data.
-                out.write(data, 0, numBytesRead);
-            }
         } catch (LineUnavailableException e) {
             e.printStackTrace();
         }
 
         return new SoundRecordImpl(format, out.toByteArray(), timestamp);
+    }
+
+    private void startLineRecording(TargetDataLine line) throws LineUnavailableException {
+        line.flush();
+        line.open(format.getAudioFormat());
+        line.start();
+    }
+
+    private void readSound(TargetDataLine line) {
+        int recordingSize = calculateRequiredSize();
+        int numBytesRead;
+        byte[] data = new byte[line.getBufferSize() / 5];
+
+        while (out.size() < recordingSize) {
+            // Read the next chunk of data from the TargetDataLine.
+            numBytesRead = line.read(data, 0, data.length);
+            // Save this chunk of data.
+            out.write(data, 0, numBytesRead);
+        }
     }
 
     /**

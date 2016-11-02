@@ -2,16 +2,11 @@ package app;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import messages.MessageSizeExceeded;
 import messages.SoundRecordMessage;
-import netty.decoders.SoundRecordMessageResponseDecoder;
-import netty.encoders.SoundRecordMessageEncoder;
-import netty.handlers.ClientHandler;
+import netty.handlers.ClientChannelInitializer;
 import recording.SoundRecord;
 import recording.impl.MicrophoneSoundSource;
 import soundformats.AudioFormatEnum;
@@ -31,8 +26,8 @@ public class Client {
 
     private static final int NUMBER_OF_EXECUTOR_THREADS = 10;
     private static final int NUMBER_OF_ARGUMENTS = 2;
-    private static final int DEFAULT_RECORDING_FREQUENTNESS = 2;
-    private static final int DEFAULT_RECORDING_LENGTH = 4;
+    private static final int DEFAULT_RECORDING_FREQUENTNESS = 1;
+    private static final int DEFAULT_RECORDING_LENGTH = 3;
 
     public static void main(String[] args) throws InterruptedException {
         int recordingFrequentness, recordingLength;
@@ -43,18 +38,15 @@ public class Client {
         } else {
             recordingFrequentness = Integer.parseInt(args[0]);
             recordingLength = Integer.parseInt(args[1]);
-
-            if (recordingFrequentness < 1 || recordingLength < 1) {
-                System.out.printf("Wrong argument values recordingFrequentness and recordingLength need to be > 0");
-                return;
-            }
         }
 
+        checkForCorrectArgumentValues(recordingFrequentness, recordingLength);
         System.out.printf("recordingFrequentness %d seconds, recordingLength %d seconds\n", recordingFrequentness, recordingLength);
 
         Bootstrap bootstrap = getBootstrap();
         final Channel channel = bootstrap.connect(SERVER_IP, SERVER_PORT).sync().channel();
         System.out.printf("Connected to ip %s on port %s\n", SERVER_IP, SERVER_PORT);
+
 
         DataWriter<SoundRecordMessage> writer = new SoundRecordMessageChannelWriter(channel);
         final Runnable runnable = recordSoundAndSendData(recordingLength, writer, PCM_8000_8_MONO_LE);
@@ -64,30 +56,27 @@ public class Client {
 
     }
 
+    private static void checkForCorrectArgumentValues(int recordingFrequentness, int recordingLength) {
+        if (recordingFrequentness < 1 || recordingLength < 1) {
+            System.out.printf("Wrong argument values recordingFrequentness and recordingLength need to be > 0");
+            System.exit(1);
+        }
+    }
+
     private static Bootstrap getBootstrap() {
         NioEventLoopGroup workerGroup = new NioEventLoopGroup();
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(workerGroup);
         bootstrap.channel(NioSocketChannel.class);
-
-        bootstrap.handler(new ChannelInitializer<SocketChannel>() {
-            @Override
-            public void initChannel(SocketChannel ch) throws Exception {
-                final ChannelPipeline pipeline = ch.pipeline();
-                pipeline.addLast(new SoundRecordMessageEncoder());
-                pipeline.addLast(new SoundRecordMessageResponseDecoder());
-                pipeline.addLast(new ClientHandler());
-            }
-        });
+        bootstrap.handler(new ClientChannelInitializer());
         return bootstrap;
     }
 
     private static Runnable recordSoundAndSendData(int recordingLength, DataWriter<SoundRecordMessage> writer, AudioFormatEnum audioFormat) {
         return () -> {
-            final SoundRecord soundRecord = new MicrophoneSoundSource().recordSound(audioFormat, recordingLength);
-            SoundRecordMessage msg = null;
             try {
-                msg = new SoundRecordMessage(soundRecord);
+                SoundRecord soundRecord = new MicrophoneSoundSource().recordSound(audioFormat, recordingLength);
+                SoundRecordMessage msg = new SoundRecordMessage(soundRecord);
                 System.out.println("Sending: " + msg);
                 writer.write(msg);
             } catch (MessageSizeExceeded messageSizeExceeded) {

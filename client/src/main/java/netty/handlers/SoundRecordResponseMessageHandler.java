@@ -9,7 +9,7 @@ import messages.SoundRecordResponseMessage;
  * Handles Incoming {@link SoundRecordResponseMessage}
  * In this case we just print magic and timestamp to console
  */
-public class ClientHandler extends SimpleChannelInboundHandler<SoundRecordResponseMessage> {
+class SoundRecordResponseMessageHandler extends SimpleChannelInboundHandler<SoundRecordResponseMessage> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, SoundRecordResponseMessage msg) throws Exception {

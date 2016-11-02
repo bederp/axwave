@@ -62,7 +62,6 @@ public class MicrophoneSoundSourceTest {
         final Path file1 = Paths.get(System.getProperty("user.dir"), "tmp1.pcm");
         final Path file2 = Paths.get(System.getProperty("user.dir"), "tmp2.pcm");
 
-
         //When
         startRecordingThreadSavingToFile(secondsToRecord, audioFormatEnum, file1);
         startRecordingThreadSavingToFile(secondsToRecord, audioFormatEnum, file2);
@@ -70,8 +69,6 @@ public class MicrophoneSoundSourceTest {
         final byte[] bytes1 = Files.readAllBytes(file1);
         final byte[] bytes2 = Files.readAllBytes(file1);
         Assert.assertArrayEquals(bytes1, bytes2);
-
-
     }
 
     private void startRecordingThreadSavingToFile(int secondsToRecord, AudioFormatEnum audioFormatEnum, Path path) {
