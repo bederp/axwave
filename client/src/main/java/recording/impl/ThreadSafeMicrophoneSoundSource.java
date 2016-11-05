@@ -16,17 +16,23 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * {@link SoundSource} implementation which tries to record sound from microphone
+ * {@link SoundSource} implementation which tries to record sound from microphone <br>
+ * This implementation after call to {@link #start()} method spawns a reading {@link Thread} which reads data from the underlying Audio Device <br>
+ * Because of this {@link #start()} method needs to be called once before requesting data with {@link #recordSound(int)} and {@link #recordSound(int, int)} methods <br>
+ * Readers should be careful not to request amount of data which is close to or larger than {@link #bufferSize} <br>
+ * Readers should also not request {@link #recordSound(int, int)} where from parameter is smaller than {@link #currentSecond} - {@link #bufferSize}
  */
-public class ThreadSafeMicrophoneSoundSource implements SoundSource{
+public class ThreadSafeMicrophoneSoundSource implements SoundSource {
 
     private static final int SECOND_TO_MILLIS = 1000;
+    private static final int EXTRA_SLEEP = 1;
     private AudioFormatEnum format;
     private final int oneSecondSize;
     private int bufferSize;
     volatile private long timestamp;
+
     volatile private int currentSecond;
-    private int  samplesBufferPointer;
+    private int samplesBufferPointer;
     private OneSecondSample[] samplesBuffer;
     private Map<Integer, Integer> secondToSample = new ConcurrentHashMap<>(bufferSize);
     private volatile boolean stopped = false;
@@ -35,7 +41,7 @@ public class ThreadSafeMicrophoneSoundSource implements SoundSource{
         this.format = format;
         this.bufferSize = bufferSize;
         samplesBuffer = new OneSecondSample[bufferSize];
-        for (int i = 0; i <samplesBuffer.length ; i++) {
+        for (int i = 0; i < samplesBuffer.length; i++) {
             samplesBuffer[i] = new OneSecondSample();
         }
         oneSecondSize = calculateOneSecondSampleSize();
@@ -81,12 +87,12 @@ public class ThreadSafeMicrophoneSoundSource implements SoundSource{
         sample.oneSecondSample = out.toByteArray();
         out.reset();
         updateSecondsToSampleMap();
-        samplesBufferPointer = ++samplesBufferPointer%bufferSize;
+        samplesBufferPointer = ++samplesBufferPointer % bufferSize;
         currentSecond++;
     }
 
     private void updateSecondsToSampleMap() {
-        if(currentSecond >= bufferSize){
+        if (currentSecond >= bufferSize) {
             secondToSample.remove(currentSecond - bufferSize);
         }
         secondToSample.put(currentSecond, samplesBufferPointer);
@@ -100,7 +106,7 @@ public class ThreadSafeMicrophoneSoundSource implements SoundSource{
     public SoundRecord recordSound(int seconds) {
 
         long current = System.currentTimeMillis();
-        sleep(seconds);
+        sleep(seconds + 1);
 
         int startingSecond = (int) ((current - timestamp) / SECOND_TO_MILLIS);
         int firstIndex = secondToSample.get(startingSecond);
@@ -135,14 +141,14 @@ public class ThreadSafeMicrophoneSoundSource implements SoundSource{
     }
 
     private void checkRecordingLength(int from, int to) {
-        if(to - from > bufferSize){
+        if (to - from > bufferSize) {
             stop();
             throw new TooLongRecordingRequest("Requested recording length exceeds buffer size");
         }
     }
 
     private void checkOldness(int from) {
-        if(from < Math.max(0, currentSecond - bufferSize)){
+        if (from < Math.max(0, currentSecond - bufferSize)) {
             stop();
             throw new TooOldRecordingRequest("Requested SoundRecord was already discarded from buffer as to old");
         }
@@ -157,20 +163,25 @@ public class ThreadSafeMicrophoneSoundSource implements SoundSource{
     }
 
     private void sleepUntilAllDataIsAvailable(int to) {
-        if(to > currentSecond){
-            sleep(to - currentSecond);
+        if (to > currentSecond) {
+            sleep(to - currentSecond + EXTRA_SLEEP);
         }
     }
 
-    public void stop(){
+    public int getCurrentSecond() {
+        return currentSecond;
+    }
+
+    public void stop() {
         stopped = true;
     }
 
     /**
      * Calculate how much bytes do you need to store 1 second sample
+     *
      * @return number of bytes required to store 1 second
      */
-    private int  calculateOneSecondSampleSize() {
+    private int calculateOneSecondSampleSize() {
         AudioFormat audioFormat = format.getAudioFormat();
         return (int) (audioFormat.getFrameRate() * audioFormat.getFrameSize());
     }

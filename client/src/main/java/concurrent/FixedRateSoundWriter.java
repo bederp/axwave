@@ -6,21 +6,25 @@ import recording.SoundRecord;
 import recording.SoundSource;
 import writers.DataWriter;
 
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class FixedRateSoundWriter {
-    private static final int NUMBER_OF_EXECUTOR_THREADS = 10;
 
+/**
+ * This class executes periodic recording on given {@link SoundSource}
+ * with provided {@link #recordingLength} and {@link #recordingFrequentness} <br>
+ * and writes the data into provided {@link DataWriter}
+ */
+public class FixedRateSoundWriter {
     private SoundSource source;
     private DataWriter<SoundRecordMessage> writer;
     private int recordingLength;
     private int recordingFrequentness;
     private AtomicInteger counter = new AtomicInteger();
-    private ScheduledExecutorService executorService = newScheduledThreadPool(NUMBER_OF_EXECUTOR_THREADS);
+    private ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     public FixedRateSoundWriter(SoundSource source, DataWriter<SoundRecordMessage> writer, int recordingLength, int recordingFrequentness) {
         this.source = source;
@@ -30,7 +34,8 @@ public class FixedRateSoundWriter {
     }
 
     public void schedule() {
-        executorService.scheduleAtFixedRate(recordSoundAndSendData(), 0, recordingFrequentness, SECONDS);
+        final LongRunningTaskWrapper<Runnable> task = new LongRunningTaskWrapper<>(recordSoundAndSendData());
+        executorService.scheduleAtFixedRate(task, 0, recordingFrequentness, SECONDS);
     }
 
     private Runnable recordSoundAndSendData() {
@@ -50,5 +55,26 @@ public class FixedRateSoundWriter {
                 System.exit(1);
             }
         };
+    }
+
+    /**
+     * This is helper class for wrapping long running Runnable <br>
+     * It is used when submitting to {@link FixedRateSoundWriter}
+     * so that scheduled task executes quickly and <br>
+     * long running work happens on another {@link Thread}
+     * @param <T> Runnable to run
+     */
+    private static class LongRunningTaskWrapper<T extends Runnable>  implements Runnable {
+
+        private T task;
+
+        private LongRunningTaskWrapper(T task) {
+            this.task = task;
+        }
+
+        @Override
+        public void run() {
+            new Thread(task).start();
+        }
     }
 }

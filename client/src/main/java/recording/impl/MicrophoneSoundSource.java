@@ -9,8 +9,10 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 
 /**
- * {@link SoundSource} implementation which tries to record sound from microphone
+ * {@link SoundSource} implementation which tries to record sound from microphone <br>
+ * It is not ThreadSafe and only one instance can record at given time due to underlying Audio Device
  */
+@Deprecated
 class MicrophoneSoundSource implements SoundSource {
 
     private static final int SECOND_TO_MILLIS = 1000;
@@ -23,7 +25,7 @@ class MicrophoneSoundSource implements SoundSource {
 
     MicrophoneSoundSource(AudioFormatEnum format) {
         this.format = format;
-        oneSecondSize = calculateRequiredSize();
+        oneSecondSize = calculateOneSecondSize();
     }
 
     @Override
@@ -75,9 +77,8 @@ class MicrophoneSoundSource implements SoundSource {
     private void readSound(TargetDataLine line) {
         int numBytesRead;
         byte[] data = new byte[line.getBufferSize() / 5];
-        System.out.println(line.getBufferSize());
 
-        while (out.size() < oneSecondSize) {
+        while (out.size() < oneSecondSize * seconds) {
             numBytesRead = line.read(data, 0, data.length);
             out.write(data, 0, numBytesRead);
         }
@@ -87,9 +88,9 @@ class MicrophoneSoundSource implements SoundSource {
      * Calculate how much bytes do you need to record N seconds in given format
      * @return number of bytes required to store N seconds in desired format
      */
-    private int calculateRequiredSize() {
+    private int calculateOneSecondSize() {
         AudioFormat audioFormat = format.getAudioFormat();
-        return (int) (seconds * audioFormat.getFrameRate() * audioFormat.getFrameSize());
+        return (int) (audioFormat.getFrameRate() * audioFormat.getFrameSize());
     }
 
 }
